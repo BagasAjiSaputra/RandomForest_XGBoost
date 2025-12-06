@@ -1,65 +1,221 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+
+type FormType = {
+  gender: string;
+  age: number;
+  hypertension: number;
+  heartDisease: number;
+  everMarried: string;
+  workType: string;
+  residenceType: string;
+  avgGlucose: number;
+  bmi: number;
+  smokingStatus: string;
+};
+
+export default function PredictPage() {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [accuracy, setAccuracy] = useState<number | null>(null);
+
+
+  const [form, setForm] = useState<FormType>({
+    gender: "Male",
+    age: 67,
+    hypertension: 0,
+    heartDisease: 1,
+    everMarried: "Yes",
+    workType: "Private",
+    residenceType: "Urban",
+    avgGlucose: 228.69,
+    bmi: 36.6,
+    smokingStatus: "formerly smoked",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    setResult(null);
+
+    const payload = {
+      method: "random_forest",
+      fitur: [
+        form.gender,
+        Number(form.age),
+        Number(form.hypertension),
+        Number(form.heartDisease),
+        form.everMarried,
+        form.workType,
+        form.residenceType,
+        Number(form.avgGlucose),
+        Number(form.bmi),
+        form.smokingStatus,
+      ],
+    };
+
+    try {
+      const res = await fetch("http://localhost:5000/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setResult(await res.json());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+  const fetchAccuracy = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/accuracy/random-forest");
+      const data = await res.json();
+
+      if (data.status) {
+        setAccuracy(data.accuracy);
+      }
+    } catch (err) {
+      console.error("Failed to load accuracy");
+    }
+  };
+
+  fetchAccuracy();
+}, []);
+
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div className="min-h-screen bg-neutral-50 px-6 py-14">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-4xl mx-auto space-y-8"
+      >
+        <header>
+          <h1 className="text-3xl font-semibold">Stroke Prediction</h1>
+          <p className="text-neutral-500 text-sm">
+            Random Forest based prediction
           </p>
+        </header>
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* FORM */}
+          <div className="bg-white rounded-2xl p-6 shadow">
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Gender" name="gender" value={form.gender} onChange={handleChange} options={["Male", "Female"]} />
+              <Field label="Age" name="age" type="number" value={form.age} onChange={handleChange} />
+              <Field label="Hypertension" name="hypertension" value={form.hypertension} onChange={handleChange} options={[0, 1]} />
+              <Field label="Heart Disease" name="heartDisease" value={form.heartDisease} onChange={handleChange} options={[0, 1]} />
+              <Field label="Ever Married" name="everMarried" value={form.everMarried} onChange={handleChange} options={["Yes", "No"]} />
+              <Field label="Work Type" name="workType" value={form.workType} onChange={handleChange} options={["Private", "Self-employed", "Govt_job"]} />
+              <Field label="Residence" name="residenceType" value={form.residenceType} onChange={handleChange} options={["Urban", "Rural"]} />
+              <Field label="Avg Glucose" name="avgGlucose" type="number" value={form.avgGlucose} onChange={handleChange} />
+              <Field label="BMI" name="bmi" type="number" value={form.bmi} onChange={handleChange} />
+              <Field
+                label="Smoking Status"
+                name="smokingStatus"
+                value={form.smokingStatus}
+                onChange={handleChange}
+                options={["never smoked", "formerly smoked", "smokes"]}
+                className="col-span-2"
+              />
+            </div>
+
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="mt-6 w-full py-3 rounded-xl bg-neutral-900 text-white disabled:opacity-50"
+            >
+              {loading ? "Predicting..." : "Predict"}
+            </button>
+          </div>
+
+          {/* RESULT */}
+          <div className="bg-white rounded-2xl p-6 shadow">
+            {!result ? (
+              <p className="text-neutral-400 text-sm">No result yet.</p>
+            ) : (
+              <>
+                <div className="flex justify-between mb-4">
+                  <span>Result</span>
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm ${
+                      result.hasil_prediksi === 1
+                        ? "bg-red-100 text-red-600"
+                        : "bg-emerald-100 text-emerald-600"
+                    }`}
+                  >
+                    {result.hasil_prediksi === 1 ? "Stroke Risk" : "Low Risk"}
+                  </span>
+                </div>
+
+                <pre className="text-xs bg-neutral-100 p-4 rounded-xl overflow-auto">
+                  {JSON.stringify(result, null, 2)}
+                </pre>
+              </>
+            )}
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </motion.div>
+
+      <h1 className="text-3xl font-semibold">Stroke Prediction</h1>
+
+  <div className="flex items-center gap-3 text-sm text-neutral-500">
+    <span>Model: Random Forest</span>
+
+    {accuracy !== null && (
+      <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 font-medium">
+        Accuracy {(accuracy * 100).toFixed(2)}%
+      </span>
+    )}
+  </div>
+  
+    </div>
+  );
+}
+
+/* ----- reusable field ----- */
+function Field({
+  label,
+  name,
+  value,
+  onChange,
+  type = "text",
+  options,
+  className = "",
+}: any) {
+  return (
+    <div className={`flex flex-col gap-1 ${className}`}>
+      <label className="text-xs text-neutral-500">{label}</label>
+
+      {options ? (
+        <select
+          name={name}
+          value={value}
+          onChange={onChange}
+          className="border rounded-xl px-3 py-2 text-sm"
+        >
+          {options.map((o: any) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          className="border rounded-xl px-3 py-2 text-sm"
+        />
+      )}
     </div>
   );
 }
