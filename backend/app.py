@@ -13,9 +13,7 @@ CORS(app)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# =====================
 # LOAD MODEL
-# =====================
 random_forest_model = joblib.load(
     os.path.join(BASE_DIR, "models/random_forest.pkl")
 )
@@ -24,9 +22,7 @@ xgboost_model = joblib.load(
     os.path.join(BASE_DIR, "models/xgboost.pkl")
 )
 
-# =====================
-# LOAD EVALUATION JSON
-# =====================
+# LOAD JSON
 RF_EVAL_PATH = os.path.join(
     BASE_DIR, "forest.json"
 )
@@ -35,9 +31,7 @@ XGB_EVAL_PATH = os.path.join(
     BASE_DIR, "xgboost.json"
 )
 
-# =====================
-# HELPER LOAD ACCURACY
-# =====================
+# HELPER AKURASI
 def load_accuracy(path):
     with open(path, "r") as f:
         data = json.load(f)
@@ -45,9 +39,7 @@ def load_accuracy(path):
 
 
 
-# =====================
 # ENCODER HELPER
-# =====================
 def encode_features(fitur):
     gender_map = {"Male": 1, "Female": 0}
     married_map = {"Yes": 1, "No": 0}
@@ -73,9 +65,7 @@ def encode_features(fitur):
     ]
 
 
-# =====================
 # RANDOM FOREST
-# =====================
 @app.route("/predict", methods=["POST"])
 def predict_random_forest():
     data = request.get_json()
@@ -99,9 +89,7 @@ def predict_random_forest():
         }), 500
 
 
-# =====================
 # XGBOOST
-# =====================
 @app.route("/xgboost", methods=["POST"])
 def predict_xgboost():
     data = request.get_json()
@@ -124,9 +112,7 @@ def predict_xgboost():
             "message": str(e)
         }), 500
 
-# =====================
 # ACCURACY RANDOM FOREST
-# =====================
 @app.route("/accuracy/random-forest", methods=["GET"])
 def accuracy_random_forest():
     try:
@@ -145,9 +131,7 @@ def accuracy_random_forest():
         }), 500
 
 
-# =====================
 # ACCURACY XGBOOST
-# =====================
 @app.route("/accuracy/xgboost", methods=["GET"])
 def accuracy_xgboost():
     try:
@@ -166,9 +150,7 @@ def accuracy_xgboost():
         }), 500
     
 
-# =====================
 # HEALTH CHECK
-# =====================
 @app.route("/", methods=["GET"])
 def index():
     return jsonify({
