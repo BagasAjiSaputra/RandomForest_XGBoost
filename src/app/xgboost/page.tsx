@@ -7,24 +7,23 @@ import SelectField from "@/app/components/Select";
 /* ================= TYPES ================= */
 
 type FormType = {
+  id: string;
   gender: string;
   age: number;
   hypertension: number;
-  heartDisease: number;
-  everMarried: string;
-  workType: string;
-  residenceType: string;
-  avgGlucose: number;
-
-  weight: number; // kg
-  height: number; // cm
+  heart_disease: number;
+  ever_married: string;
+  work_type: string;
+  Residence_type: string;
+  avg_glucose_level: number;
   bmi: number;
-
-  smokingStatus: string;
+  smoking_status: string;
+  stroke?: number;
 };
 
 type PredictionResult = {
   hasil_prediksi: number;
+  model?: string;
 };
 
 /* ================= CONFIG ================= */
@@ -36,6 +35,7 @@ const selectFields = [
     options: [
       { label: "Male", value: "Male" },
       { label: "Female", value: "Female" },
+      { label: "Other", value: "Other" },
     ],
   },
   {
@@ -48,7 +48,7 @@ const selectFields = [
   },
   {
     label: "Heart Disease",
-    name: "heartDisease",
+    name: "heart_disease",
     options: [
       { label: "No", value: 0 },
       { label: "Yes", value: 1 },
@@ -56,24 +56,26 @@ const selectFields = [
   },
   {
     label: "Ever Married",
-    name: "everMarried",
+    name: "ever_married",
     options: [
-      { label: "Yes", value: "Yes" },
       { label: "No", value: "No" },
+      { label: "Yes", value: "Yes" },
     ],
   },
   {
     label: "Work Type",
-    name: "workType",
+    name: "work_type",
     options: [
+      { label: "Children", value: "children" },
+      { label: "Government", value: "Govt_job" },
+      { label: "Never Worked", value: "Never_worked" },
       { label: "Private", value: "Private" },
       { label: "Self-employed", value: "Self-employed" },
-      { label: "Government", value: "Govt_job" },
     ],
   },
   {
-    label: "Residence",
-    name: "residenceType",
+    label: "Residence Type",
+    name: "Residence_type",
     options: [
       { label: "Urban", value: "Urban" },
       { label: "Rural", value: "Rural" },
@@ -81,38 +83,36 @@ const selectFields = [
   },
   {
     label: "Smoking Status",
-    name: "smokingStatus",
+    name: "smoking_status",
     colSpan: "sm:col-span-2",
     options: [
       { label: "Never smoked", value: "never smoked" },
       { label: "Formerly smoked", value: "formerly smoked" },
       { label: "Smokes", value: "smokes" },
+      { label: "Unknown", value: "Unknown" },
     ],
   },
 ];
 
 /* ================= PAGE ================= */
 
-export default function PredictRandomForestPage() {
+export default function PredictStrokePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PredictionResult | null>(null);
   const [accuracy, setAccuracy] = useState<number | null>(null);
 
   const [form, setForm] = useState<FormType>({
+    id: "9999",
     gender: "Male",
     age: 30,
     hypertension: 0,
-    heartDisease: 0,
-    everMarried: "No",
-    workType: "Private",
-    residenceType: "Urban",
-    avgGlucose: 100,
-
-    weight: 60,
-    height: 170,
+    heart_disease: 0,
+    ever_married: "No",
+    work_type: "Private",
+    Residence_type: "Urban",
+    avg_glucose_level: 100,
     bmi: 20.8,
-
-    smokingStatus: "never smoked",
+    smoking_status: "never smoked",
   });
 
   /* ================= HANDLERS ================= */
@@ -135,21 +135,7 @@ export default function PredictRandomForestPage() {
       const res = await fetch("http://localhost:5000/xgboost", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          method: "xgboost",
-          fitur: [
-            form.gender,
-            form.age,
-            form.hypertension,
-            form.heartDisease,
-            form.everMarried,
-            form.workType,
-            form.residenceType,
-            form.avgGlucose,
-            form.bmi,
-            form.smokingStatus,
-          ],
-        }),
+        body: JSON.stringify(form),
       });
 
       const data = await res.json();
@@ -161,32 +147,16 @@ export default function PredictRandomForestPage() {
     }
   };
 
-  /* ================= EFFECT ================= */
 
-  // Auto calculate BMI
-  useEffect(() => {
-    if (form.weight > 0 && form.height > 0) {
-      const h = form.height / 100;
-      const bmi = form.weight / (h * h);
-
-      setForm((prev) => ({
-        ...prev,
-        bmi: Number(bmi.toFixed(1)),
-      }));
-    }
-  }, [form.weight, form.height]);
-
-  // Fetch accuracy
+  // Fetch accuracy for XGBoost
   useEffect(() => {
     const fetchAccuracy = async () => {
       try {
-        const res = await fetch(
-          "http://localhost:5000/accuracy/xgboost"
-        );
+        const res = await fetch("http://localhost:5000/accuracy/xgboost");
         const data = await res.json();
         if (data.status) setAccuracy(data.accuracy);
-      } catch {
-        console.error("Failed load accuracy");
+      } catch (err) {
+        console.error("Failed to load accuracy", err);
       }
     };
     fetchAccuracy();
@@ -208,7 +178,7 @@ export default function PredictRandomForestPage() {
             Stroke Prediction
           </h1>
           <div className="flex items-center gap-3 text-sm text-neutral-500">
-            <span>Model: Random Forest</span>
+            <span>Model: XGBoost</span>
             {accuracy !== null && (
               <span className="rounded-full bg-emerald-100 px-3 py-1 font-medium text-emerald-700">
                 Accuracy {(accuracy * 100).toFixed(2)}%
@@ -224,7 +194,7 @@ export default function PredictRandomForestPage() {
               Patient Information
             </h2>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {selectFields.map((field) => (
                 <div key={field.name} className={field.colSpan ?? ""}>
                   <SelectField
@@ -239,14 +209,11 @@ export default function PredictRandomForestPage() {
 
               {[
                 { label: "Age", name: "age", step: 1 },
-                { label: "Avg Glucose", name: "avgGlucose", step: 0.01 },
-                { label: "Weight (kg)", name: "weight", step: 0.1 },
-                { label: "Height (cm)", name: "height", step: 1 },
+                { label: "Avg Glucose Level", name: "avg_glucose_level", step: 0.01 },
+                { label: "BMI", name: "bmi", step: 0.1 },
               ].map((input) => (
                 <div key={input.name} className="flex flex-col gap-1">
-                  <label className="text-xs text-neutral-500">
-                    {input.label}
-                  </label>
+                  <label className="text-xs text-neutral-500">{input.label}</label>
                   <input
                     type="number"
                     step={input.step}
@@ -257,17 +224,6 @@ export default function PredictRandomForestPage() {
                   />
                 </div>
               ))}
-
-              {/* BMI */}
-              <div className="flex flex-col gap-1">
-                <label className="text-xs text-neutral-500">BMI</label>
-                <input
-                  type="number"
-                  value={form.bmi}
-                  disabled
-                  className="rounded-xl border bg-neutral-100 px-3 py-2 text-sm text-neutral-600"
-                />
-              </div>
             </div>
 
             <button
@@ -291,24 +247,26 @@ export default function PredictRandomForestPage() {
               </p>
             ) : (
               <div className="space-y-4">
+                {/* Model */}
                 <div className="flex items-center justify-between">
-                  <span className="text-neutral-500">Prediction</span>
-                  <span
-                    className={`rounded-full px-4 py-1 text-sm font-medium ${
-                      result.hasil_prediksi === 1
-                        ? "bg-red-100 text-red-600"
-                        : "bg-emerald-100 text-emerald-600"
-                    }`}
-                  >
-                    {result.hasil_prediksi === 1
-                      ? "Stroke Risk"
-                      : "Low Risk"}
+                  <span className="text-neutral-500">Model</span>
+                  <span className="rounded-full bg-blue-100 px-4 py-1 text-sm font-medium text-blue-700">
+                    {result.model || "Unknown"}
                   </span>
                 </div>
 
-                <pre className="rounded-xl bg-neutral-100 p-4 text-xs">
-                  {JSON.stringify(result, null, 2)}
-                </pre>
+                {/* Prediction */}
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500">Prediction</span>
+                  <span
+                    className={`rounded-full px-4 py-1 text-sm font-medium ${result.hasil_prediksi === 1
+                        ? "bg-red-100 text-red-600"
+                        : "bg-emerald-100 text-emerald-600"
+                      }`}
+                  >
+                    {result.hasil_prediksi === 1 ? "Stroke Risk" : "Low Risk"}
+                  </span>
+                </div>
               </div>
             )}
           </div>
