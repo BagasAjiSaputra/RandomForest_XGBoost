@@ -178,7 +178,7 @@ export default function PredictStrokePage() {
             Stroke Prediction
           </h1>
           <div className="flex items-center gap-3 text-sm text-neutral-500">
-            <span>Model: XGBoost</span>
+            <span>Model: Random Forest</span>
             {accuracy !== null && (
               <span className="rounded-full bg-emerald-100 px-3 py-1 font-medium text-emerald-700">
                 Accuracy {(accuracy * 100).toFixed(2)}%
@@ -247,27 +247,24 @@ export default function PredictStrokePage() {
               </p>
             ) : (
               <div className="space-y-4">
-                {/* Model */}
-      <div className="flex items-center justify-between">
-        <span className="text-neutral-500">Model</span>
-        <span className="rounded-full bg-blue-100 px-4 py-1 text-sm font-medium text-blue-700">
-          {result.model || "Unknown"}
-        </span>
-      </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500">Model</span>
+                  <span className="rounded-full bg-blue-100 px-4 py-1 text-sm font-medium text-blue-700">
+                    {result.model || "Unknown"}
+                  </span>
+                </div>
 
-      {/* Prediction */}
-      <div className="flex items-center justify-between">
-        <span className="text-neutral-500">Prediction</span>
-        <span
-          className={`rounded-full px-4 py-1 text-sm font-medium ${
-            result.hasil_prediksi === 1
-              ? "bg-red-100 text-red-600"
-              : "bg-emerald-100 text-emerald-600"
-          }`}
-        >
-          {result.hasil_prediksi === 1 ? "Stroke Risk" : "Low Risk"}
-        </span>
-      </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-neutral-500">Prediction</span>
+                  <span
+                    className={`rounded-full px-4 py-1 text-sm font-medium ${result.hasil_prediksi === 1
+                        ? "bg-red-100 text-red-600"
+                        : "bg-emerald-100 text-emerald-600"
+                      }`}
+                  >
+                    {result.hasil_prediksi === 1 ? "Stroke Risk" : "Low Risk"}
+                  </span>
+                </div>
               </div>
             )}
           </div>
